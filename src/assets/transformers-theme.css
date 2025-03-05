@@ -1,0 +1,68 @@
+:root {
+    /* Transformers Color Palette */
+    --autobot-blue: #0068B7;
+    --decepticon-red: #C41E3A;
+    --metal-gray: #707070;
+    --energon-purple: #8A4FFF;
+  }
+  
+  body {
+    font-family: 'Orbitron', sans-serif;
+    background-color: var(--metal-gray);
+    color: white;
+    background-image: linear-gradient(
+      rgba(0,0,0,0.7), 
+      rgba(0,0,0,0.7)
+    ), url('/src/assets/background.png');
+    background-size: cover;
+    background-attachment: fixed;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  
+  .app-container {
+    background-color: rgba(20, 20, 20, 0.8);
+    border: 3px solid var(--autobot-blue);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 0 20px rgba(0, 104, 183, 0.5);
+  }
+  
+  .timer-display {
+    font-size: 3rem;
+    color: var(--energon-purple);
+    text-shadow: 0 0 10px rgba(138, 79, 255, 0.5);
+  }
+  
+  .button {
+    background-color: var(--autobot-blue);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .button:hover {
+    background-color: var(--decepticon-red);
+    transform: scale(1.05);
+  }
+  
+  .progress-bar {
+    background-color: var(--metal-gray);
+    height: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  
+  .progress-bar-fill {
+    background-color: var(--autobot-blue);
+    height: 100%;
+    transition: width 0.5s ease-in-out;
+  }

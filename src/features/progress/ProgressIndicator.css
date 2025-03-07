@@ -1,0 +1,30 @@
+.energon-glow {
+    box-shadow: 0 0 10px #00FF00;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 5px #00FF00;
+    }
+    50% {
+      box-shadow: 0 0 15px #00FF00;
+    }
+    100% {
+      box-shadow: 0 0 5px #00FF00;
+    }
+  }
+  
+  .mission-log {
+    font-family: 'Courier New', monospace;
+  }
+  
+  .log-entry {
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(75, 0, 130, 0.3);
+    padding-bottom: 4px;
+  }
+  
+  .log-entry:last-child {
+    border-bottom: none;
+  }

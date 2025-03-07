@@ -59,8 +59,8 @@ _"Autobots, roll out!"_ Optimize your time and transform your productivity with 
 ---
 
 ## **Conclusion**
-The Transformers Timer is not just an app; it's your mission control for time management. Like the Autobots, it helps you conquer challenges and emerge victorious. Whether you're working, studying, or just trying to stay on track, this timer ensures you're always in control. So, install it, transform your productivity, and let the sound of success guide you! 🚀
+The Transformers Timer is not just an app; it's your mission control for time management. Like the Autobots, it helps you conquer challenges and emerge victorious. Whether working, studying, or just trying to stay on track, this timer ensures you're always in control. So, install it, transform your productivity, and let the sound of success guide you! 🚀
 
 ---
-
-Let me know if you’d like to refine it further or if you have any additions! 😊
+## **Blocks/tricky parts**
+I wanted to add in the settings when the character is selected that would change  the theme the text, and the sound played to match the character but I'm still working on it. Getting the second progress bar to show and in the container or above the timer 

@@ -1,7 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Clock } from 'lucide-react';
 
 const TimerDisplay = ({ displayOnly = false, initialMinutes = 0, timeRemaining = 0, onTimeInputChange }) => {
+  // Function to play sound
+  const playsound = () => {
+    const audio = new Audio('optimuslaughs-evily.mp3'); // Ensure this file is in the public folder
+    audio.play();
+  };
+
+  // Trigger sound when timeRemaining reaches zero
+  useEffect(() => {
+    if (timeRemaining === 0 && displayOnly) {
+      playsound();
+    }
+  }, [timeRemaining, displayOnly]);
+
   // Format time as mm:ss
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);

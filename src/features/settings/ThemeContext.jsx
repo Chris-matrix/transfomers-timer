@@ -1,65 +1,105 @@
-import React, { createContext, useContext, useState } from 'react';
-import { getSettings, saveSettings } from './SettingsService';
+// src/context/ThemeContext.jsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
+// Available themes
+export const THEMES = {
+  LIGHT: 'light',
+  DARK: 'dark',
+  SYSTEM: 'system',
+  FOCUS: 'focus',
+  CALM: 'calm',
+  FOREST: 'forest'
+};
+
+// Create context
 const ThemeContext = createContext();
 
-export const useTheme = () => useContext(ThemeContext);
+// Custom hook for using theme context
+export function useTheme() {
+  return useContext(ThemeContext);
+}
 
-export const ThemeProvider = ({ children }) => {
-  const [settings, setSettings] = useState(() => getSettings());
+// Provider component
+export function ThemeProvider({ children }) {
+  const savedTheme = localStorage.getItem('theme') || THEMES.SYSTEM;
+  const [theme, setThemeState] = useState(savedTheme);
   
-  // Get theme colors based on selected theme
-  const getThemeColors = () => {
-    switch(settings.theme) {
-      case 'autobots':
+  // Update localStorage and apply theme
+  const setTheme = (newTheme) => {
+    setThemeState(newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
+  
+  // Apply theme to document
+  useEffect(() => {
+    const root = window.document.documentElement;
+    
+    // First remove all possible theme classes
+    root.classList.remove('light', 'dark', 'focus', 'calm', 'forest');
+    
+    // Apply the selected theme
+    if (theme === THEMES.SYSTEM) {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 
+        'dark' : 'light';
+      root.classList.add(systemTheme);
+    } else {
+      root.classList.add(theme);
+    }
+    
+    // Apply additional theme CSS variables
+    root.style.setProperty('--color-primary', getThemeColors(theme).primary);
+    root.style.setProperty('--color-secondary', getThemeColors(theme).secondary);
+    root.style.setProperty('--color-accent', getThemeColors(theme).accent);
+  }, [theme]);
+  
+  // Helper to get theme colors
+  const getThemeColors = (currentTheme) => {
+    switch(currentTheme) {
+      case THEMES.FOCUS:
         return {
-          primary: 'bg-red-600',
-          secondary: 'bg-blue-500',
-          text: 'text-yellow-400',
-          accent: 'border-yellow-400'
+          primary: '#ff5252',
+          secondary: '#ffecb3',
+          accent: '#ff8a80'
         };
-      case 'decepticons':
+      case THEMES.CALM:
         return {
-          primary: 'bg-purple-700',
-          secondary: 'bg-gray-800',
-          text: 'text-gray-300',
-          accent: 'border-purple-400'
+          primary: '#4fc3f7',
+          secondary: '#b3e5fc',
+          accent: '#29b6f6'
         };
-      case 'bumblebee':
+      case THEMES.FOREST:
         return {
-          primary: 'bg-yellow-400',
-          secondary: 'bg-black',
-          text: 'text-black',
-          accent: 'border-yellow-500'
+          primary: '#66bb6a',
+          secondary: '#c8e6c9',
+          accent: '#43a047'
         };
+      case THEMES.DARK:
+        return {
+          primary: '#bb86fc',
+          secondary: '#03dac6',
+          accent: '#cf6679'
+        };
+      case THEMES.LIGHT:
+      case THEMES.SYSTEM:
       default:
         return {
-          primary: 'bg-red-600',
-          secondary: 'bg-blue-500',
-          text: 'text-yellow-400',
-          accent: 'border-yellow-400'
+          primary: '#1a73e8',
+          secondary: '#e8f0fe',
+          accent: '#ea4335'
         };
     }
   };
-
-  // Update settings and save to localStorage
-  const updateSettings = (newSettings) => {
-    const updatedSettings = { ...settings, ...newSettings };
-    setSettings(updatedSettings);
-    saveSettings(updatedSettings);
+  
+  // Context value
+  const value = {
+    theme,
+    setTheme,
+    themeColors: getThemeColors(theme)
   };
   
   return (
-    <ThemeContext.Provider 
-      value={{
-        theme: settings.theme,
-        notificationSound: settings.notificationSound,
-        notificationEnabled: settings.notificationEnabled,
-        themeColors: getThemeColors(),
-        updateSettings
-      }}
-    >
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
-};
+}

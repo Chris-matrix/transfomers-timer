@@ -1,12 +1,12 @@
 import React from 'react';
-import { useTheme } from '../settings/ThemeContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 const Footer = () => {
-  const { themeColors } = useTheme();
+  const { themeClasses } = useSettings();
   
   return (
-    <footer className={`p-4 ${themeColors.primary} text-center`}>
-      <p className="text-sm">
+    <footer className={`${themeClasses.primary} py-3 px-6 text-center text-opacity-90 text-sm`}>
+      <p className="font-['Orbitron'] tracking-wider">
         "Till all are timed!" | &copy; {new Date().getFullYear()} Cybertron Tech
       </p>
     </footer>

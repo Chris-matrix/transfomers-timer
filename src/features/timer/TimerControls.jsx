@@ -1,35 +1,59 @@
+// src/features/timer/TimerControls.jsx
 import React from 'react';
-import { useTheme } from '../settings/ThemeContext';
+import { Play, Pause, RotateCcw } from 'lucide-react';
+import { useSettings } from '../settings/SettingsContext';
 
-const TimerControls = ({ isRunning, hasTimeSet, timeRemaining, initialTime, onStart, onPause, onReset }) => {
-  const { themeColors } = useTheme();
+const TimerControls = ({ 
+  isRunning, 
+  isPaused,
+  hasTimeSet, 
+  timeRemaining, 
+  initialTime, 
+  onStart, 
+  onPause, 
+  onReset 
+}) => {
+  const { themeClasses } = useSettings();
 
   return (
-    <div className="flex justify-center space-x-4">
-      {!isRunning && (
+    <div className="flex justify-center space-x-6 my-6">
+      {!isRunning ? (
         <button
           onClick={onStart}
           disabled={!hasTimeSet}
-          className={`px-6 py-3 rounded-lg font-bold ${themeColors.primary} hover:opacity-90 disabled:opacity-50`}
+          className={`p-5 rounded-full ${themeClasses.button} disabled:opacity-50 transition transform hover:scale-105 active:scale-95 shadow-lg disabled:cursor-not-allowed`}
+          aria-label={timeRemaining < initialTime && timeRemaining > 0 ? "Resume timer" : "Start timer"}
         >
-          {timeRemaining < initialTime ? "Resume" : "Start"}
+          <Play size={28} />
         </button>
-      )}
-      
-      {isRunning && (
-        <button
-          onClick={onPause}
-          className={`px-6 py-3 rounded-lg font-bold bg-yellow-500 hover:opacity-90`}
-        >
-          Pause
-        </button>
+      ) : (
+        <>
+          {!isPaused ? (
+            <button
+              onClick={onPause}
+              className="p-5 rounded-full bg-yellow-500 hover:bg-yellow-600 transition transform hover:scale-105 active:scale-95 shadow-lg"
+              aria-label="Pause timer"
+            >
+              <Pause size={28} />
+            </button>
+          ) : (
+            <button
+              onClick={onStart}
+              className={`p-5 rounded-full ${themeClasses.button} transition transform hover:scale-105 active:scale-95 shadow-lg`}
+              aria-label="Resume timer"
+            >
+              <Play size={28} />
+            </button>
+          )}
+        </>
       )}
       
       <button
         onClick={onReset}
-        className="px-6 py-3 rounded-lg font-bold bg-gray-600 hover:opacity-90"
+        className="p-5 rounded-full bg-gray-600 hover:bg-gray-700 transition transform hover:scale-105 active:scale-95 shadow-lg"
+        aria-label="Reset timer"
       >
-        Reset
+        <RotateCcw size={28} />
       </button>
     </div>
   );

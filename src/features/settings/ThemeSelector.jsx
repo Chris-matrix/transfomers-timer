@@ -1,7 +1,7 @@
 // src/features/settings/SettingsPanel.jsx
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings } from './SettingsContext';
 import ThemeSelector from './ThemeSelector';
 import TimerPresets from './TimerPresets';
 import NotificationSettings from './NotificationSettings';

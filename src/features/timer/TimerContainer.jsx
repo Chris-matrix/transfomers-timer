@@ -1,141 +1,305 @@
-import React, { useState, useEffect } from 'react';
+// src/features/timer/TimerContainer.jsx
+import React, { useState, useEffect, useRef } from 'react';
+import { useSettings } from '../settings/SettingsContext';
+import { useData } from '../data/DataContext';
 import TimerDisplay from './TimerDisplay';
 import TimerControls from './TimerControls';
-import { useTheme } from '../settings/ThemeContext';
-import SettingsPanel from '../settings/SettingsPanel';
 import ProgressIndicator from '../progress/ProgressIndicator';
 import CompletionMessage from '../rewards/CompletionMessage';
-import StreakCounter from '../streak/StreakCounter';
-import { playNotificationSound } from '../notifications/NotificationService';
-import { updateStreak } from '../streak/StreakService';
-import Header from '../layout/Header';
-import Footer from '../layout/Footer';
+import { ChevronDown, Coffee } from 'lucide-react';
 
 const TimerContainer = () => {
-  const { themeColors } = useTheme();
+  const { settings, themeClasses } = useSettings();
+  const { addSession } = useData();
   
+  // Timer state
   const [timerState, setTimerState] = useState({
-    timeRemaining: 0,
-    initialTime: 0,
+    timeRemaining: 25 * 60, // Default to pomodoro time (25 min)
+    initialTime: 25 * 60,
     isRunning: false,
+    isPaused: false,
     isComplete: false,
   });
   
-  const [showSettings, setShowSettings] = useState(false);
+  // UI state
+  const [selectedPreset, setSelectedPreset] = useState('pomodoro');
+  const [isBreak, setIsBreak] = useState(false);
+  const [showPresets, setShowPresets] = useState(false);
+  const [showCompletionMessage, setShowCompletionMessage] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [completedSessionData, setCompletedSessionData] = useState(null);
+  
+  // Audio ref for sound effect
+  const audioRef = useRef(null);
 
-  // Use effects hook to handle timer countdown
+  // Initialize timer with preset when settings change
+  useEffect(() => {
+    if (!timerState.isRunning) {
+      const presetMinutes = isBreak ? settings.presets.break : settings.presets[selectedPreset];
+      const seconds = presetMinutes * 60;
+      setTimerState(prev => ({
+        ...prev,
+        timeRemaining: seconds,
+        initialTime: seconds
+      }));
+    }
+  }, [selectedPreset, settings.presets, isBreak, timerState.isRunning]);
+
+  // Timer countdown logic
   useEffect(() => {
     let interval = null;
     
-    if (timerState.isRunning && timerState.timeRemaining > 0) {
+    if (timerState.isRunning && !timerState.isPaused) {
       interval = setInterval(() => {
-        setTimerState(prev => ({
-          ...prev,
-          timeRemaining: prev.timeRemaining - 1
-        }));
+        setTimerState(prev => {
+          if (prev.timeRemaining <= 1) {
+            clearInterval(interval);
+            handleTimerComplete();
+            return {
+              ...prev,
+              timeRemaining: 0,
+              isRunning: false,
+              isComplete: true
+            };
+          }
+          return {
+            ...prev,
+            timeRemaining: prev.timeRemaining - 1
+          };
+        });
       }, 1000);
-    } else if (timerState.isRunning && timerState.timeRemaining === 0) {
-      // Timer completed
-      playNotificationSound();
-      updateStreak();
-      setTimerState(prev => ({
-        ...prev,
-        isRunning: false,
-        isComplete: true
-      }));
     }
     
     return () => clearInterval(interval);
-  }, [timerState.isRunning, timerState.timeRemaining]);
+  }, [timerState.isRunning, timerState.isPaused]);
 
-  // Timer action handlers
-  const startTimer = () => {
-    if (timerState.initialTime > 0) {
+  const handleTimerComplete = () => {
+    // Play sound if enabled
+    if (settings.soundEnabled && audioRef.current) {
+      audioRef.current.play().catch(err => console.error("Audio playback error:", err));
+    }
+    
+    // Create session data
+    const sessionData = {
+      type: isBreak ? 'break' : selectedPreset,
+      duration: timerState.initialTime,
+      completed: true,
+      paused: timerState.isPaused
+    };
+    
+    // Record session in analytics
+    addSession(sessionData);
+    
+    // Show completion message if it's not a break
+    if (!isBreak) {
+      setCompletedSessionData(sessionData);
+      setShowCompletionMessage(true);
+    }
+    
+    // Auto switch to break timer after focus session
+    if (!isBreak) {
+      setIsBreak(true);
+      const breakTime = settings.presets.break * 60;
       setTimerState(prev => ({
         ...prev,
-        timeRemaining: prev.initialTime,
-        isRunning: true,
+        initialTime: breakTime,
+        timeRemaining: breakTime,
+        isComplete: false
+      }));
+    } else {
+      // If it was a break, go back to focus mode
+      setIsBreak(false);
+      const focusTime = settings.presets[selectedPreset] * 60;
+      setTimerState(prev => ({
+        ...prev,
+        initialTime: focusTime,
+        timeRemaining: focusTime,
         isComplete: false
       }));
     }
   };
 
+  const startTimer = () => {
+    setSessionStartTime(new Date());
+    setTimerState(prev => ({
+      ...prev,
+      isRunning: true,
+      isPaused: false,
+      isComplete: false
+    }));
+  };
+
   const pauseTimer = () => {
     setTimerState(prev => ({
       ...prev,
-      isRunning: false
+      isPaused: true
     }));
   };
 
   const resetTimer = () => {
+    if (timerState.isRunning) {
+      // Record incomplete session
+      const sessionDuration = Math.floor(
+        (new Date() - new Date(sessionStartTime)) / 1000
+      );
+      
+      addSession({
+        type: isBreak ? 'break' : selectedPreset,
+        duration: sessionDuration,
+        completed: false,
+        paused: timerState.isPaused
+      });
+    }
+    
     setTimerState(prev => ({
       ...prev,
       timeRemaining: prev.initialTime,
       isRunning: false,
+      isPaused: false,
       isComplete: false
     }));
   };
-  
-  const handleTimeInputChange = (minutes) => {
+
+  const selectPreset = (preset) => {
+    setSelectedPreset(preset);
+    setShowPresets(false);
+    
+    if (!timerState.isRunning) {
+      const presetTime = settings.presets[preset] * 60;
+      setTimerState(prev => ({
+        ...prev,
+        initialTime: presetTime,
+        timeRemaining: presetTime
+      }));
+    }
+  };
+
+  // Skip break timer
+  const skipBreak = () => {
+    setIsBreak(false);
+    const focusTime = settings.presets[selectedPreset] * 60;
     setTimerState(prev => ({
       ...prev,
-      initialTime: minutes * 60,
-      timeRemaining: minutes * 60
+      initialTime: focusTime,
+      timeRemaining: focusTime,
+      isRunning: false,
+      isPaused: false,
+      isComplete: false
     }));
   };
 
   // Calculate progress percentage
-  const progressPercentage = timerState.initialTime === 0 ? 0 : 
-    ((timerState.initialTime - timerState.timeRemaining) / timerState.initialTime) * 100;
+  const calculateProgress = () => {
+    return timerState.initialTime === 0 ? 0 : 
+      ((timerState.initialTime - timerState.timeRemaining) / timerState.initialTime) * 100;
+  };
+
+  // Get audio source based on settings
+  const getAudioSrc = () => {
+    switch(settings.soundOption) {
+      case 'autobots-rollout': return '/alarm.mp3';
+      case 'decepticons-attack': return '/alarm.mp3'; 
+      case 'energon-cube': return '/alarm.mp3';
+      default: return '/alarm.mp3';
+    }
+  };
 
   return (
-    <div className={`flex flex-col h-screen ${themeColors.secondary} text-white`}>
-      <Header 
-        onSettingsClick={() => setShowSettings(!showSettings)} 
+    <div className="max-w-md w-full mx-auto">
+      {showCompletionMessage && (
+        <CompletionMessage 
+          data={completedSessionData}
+          onClose={() => setShowCompletionMessage(false)}
+        />
+      )}
+      
+      <audio 
+        ref={audioRef} 
+        src={getAudioSrc()} 
+        preload="auto" 
       />
-
-      <main className="flex-1 p-4 flex flex-col items-center justify-center">
-        {showSettings && (
-          <SettingsPanel onClose={() => setShowSettings(false)} />
-        )}
-
-        <div className={`w-full max-w-md p-6 rounded-lg border-4 ${themeColors.accent} ${themeColors.secondary} mb-8`}>
-          {!timerState.isRunning && !timerState.isComplete && (
-            <TimerDisplay 
-              initialMinutes={timerState.initialTime / 60}
-              onTimeInputChange={handleTimeInputChange}
-              timeRemaining={timerState.timeRemaining}
-            />
-          )}
+      
+      <div className={`p-6 rounded-lg shadow-lg ${themeClasses.timerBorder} ${themeClasses.timerBg}`}>
+        <div className="mb-6 flex justify-between items-center">
+          <h2 className="text-2xl font-bold">
+            {isBreak ? 'Break Time' : 'Focus Time'}
+          </h2>
           
-          {(timerState.isRunning || timerState.timeRemaining !== timerState.initialTime) && (
-            <TimerDisplay 
-              displayOnly={true}
-              timeRemaining={timerState.timeRemaining}
-            />
-          )}
-          
-          <ProgressIndicator percentage={progressPercentage} />
-          
-          <TimerControls 
-            isRunning={timerState.isRunning}
-            hasTimeSet={timerState.initialTime > 0}
-            timeRemaining={timerState.timeRemaining}
-            initialTime={timerState.initialTime}
-            onStart={startTimer}
-            onPause={pauseTimer}
-            onReset={resetTimer}
-          />
+          <div className="relative">
+            <button 
+              className="flex items-center gap-2 px-4 py-2 bg-opacity-20 bg-white rounded-md"
+              onClick={() => setShowPresets(!showPresets)}
+              aria-expanded={showPresets}
+              aria-haspopup="true"
+            >
+              {selectedPreset.charAt(0).toUpperCase() + selectedPreset.slice(1)}
+              <ChevronDown size={16} />
+            </button>
+            
+            {showPresets && (
+              <div className="absolute right-0 top-full mt-2 bg-opacity-90 bg-white text-gray-800 rounded-md shadow-lg p-2 z-10">
+                <button 
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-200 rounded-md"
+                  onClick={() => selectPreset('pomodoro')}
+                >
+                  Pomodoro ({settings.presets.pomodoro} min)
+                </button>
+                <button 
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-200 rounded-md"
+                  onClick={() => selectPreset('shortFocus')}
+                >
+                  Short Focus ({settings.presets.shortFocus} min)
+                </button>
+                <button 
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-200 rounded-md"
+                  onClick={() => selectPreset('custom')}
+                >
+                  Custom ({settings.presets.custom} min)
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         
-        {timerState.isComplete && (
-          <CompletionMessage minutes={timerState.initialTime / 60} />
-        )}
+        <ProgressIndicator percentage={calculateProgress()} />
         
-        <StreakCounter />
-      </main>
-      
-      <Footer />
+        <TimerDisplay 
+          displayOnly={timerState.isRunning || timerState.timeRemaining !== timerState.initialTime}
+          initialMinutes={timerState.initialTime / 60}
+          timeRemaining={timerState.timeRemaining}
+          onTimeInputChange={(minutes) => {
+            const seconds = minutes * 60;
+            setTimerState(prev => ({
+              ...prev,
+              initialTime: seconds,
+              timeRemaining: seconds
+            }));
+          }}
+        />
+        
+        <TimerControls 
+          isRunning={timerState.isRunning}
+          isPaused={timerState.isPaused}
+          hasTimeSet={timerState.initialTime > 0}
+          timeRemaining={timerState.timeRemaining}
+          initialTime={timerState.initialTime}
+          onStart={startTimer}
+          onPause={pauseTimer}
+          onReset={resetTimer}
+        />
+        
+        {isBreak && (
+          <div className="mt-6 text-center">
+            <button 
+              className="flex items-center gap-2 mx-auto px-4 py-2 rounded-md bg-opacity-20 bg-white hover:bg-opacity-30 transition"
+              onClick={skipBreak}
+            >
+              <Coffee size={16} />
+              Skip Break
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

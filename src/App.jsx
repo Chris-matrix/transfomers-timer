@@ -1,79 +1,52 @@
-// Import necessary React hooks and components
+// src/App.jsx
 import React, { useState } from 'react';
+import { ThemeProvider } from './features/settings/SettingsContext';
+import { DataProvider } from './features/data/DataContext';
+import TimerContainer from './features/timer/TimerContainer';
+import SettingsPanel from './features/settings/SettingsPanel';
+import DataManager from './features/data/DataManager';
+import Header from './features/layout/Header';
+import Footer from './features/layout/Footer';
+import './assets/transformers-theme.css';
 
-// Import custom components
-import TimerContainer from './features/timer/TimerContainer'; // Main timer logic and display
-import { ThemeProvider } from './features/settings/ThemeContext'; // Provides theme (light/dark) context
-import CharacterGif from './features/settings/CharacterGif'; // Displays a GIF based on the selected character
-import CompletionMessage from './features/rewards/CompletionMessage'; // Message displayed when a timer session is completed
-import CharacterSelector from './features/settings/CharacterSelector'; // Allows the user to select a character for customization
-import ProgressIndicator from './features/progress/ProgressIndicator'; // Visual progress bar for the timer
+function App() {
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDataManager, setShowDataManager] = useState(false);
 
-// Import CSS for ProgressIndicator styling
-import './features/progress/ProgressIndicator.css';
-
-const App = () => {
-  // State to track the currently selected character (for CharacterGif)
-  const [selectedCharacter] = useState('');
-
-  // State to control whether the completion message is shown
-  const [showCompletionMessage, setShowCompletionMessage] = useState(false);
-
-  // State to store the number of minutes completed in a timer session (used in CompletionMessage)
-  const [completionMessage, setCompletionMessage] = useState(0);
-
-  // State to store achievements earned by the user (used in CompletionMessage)
-  const [achievements, setAchievements] = useState([]);
-
-  // State to track the progress percentage of the timer (used in ProgressIndicator)
-  const [progress, setProgress] = useState(0);
-
-  /**
-   * Toggles the visibility of the completion message.
-   * If it's currently visible, this function will hide it, and vice versa.
-   */
-  const toggleCompletionMessage = () => {
-    setShowCompletionMessage(!showCompletionMessage);
+  const toggleSettings = () => {
+    setShowSettings(!showSettings);
+    if (showDataManager) setShowDataManager(false);
   };
 
-  /**
-   * Adds a new achievement to the list of achievements.
-   * @param {string} achievement - The name or description of the achievement to add.
-   */
-  const addAchievement = (achievement) => {
-    setAchievements((prev) => [...prev, achievement]);
+  const toggleDataManager = () => {
+    setShowDataManager(!showDataManager);
+    if (showSettings) setShowSettings(false);
   };
 
   return (
-    /**
-     * The ThemeProvider wraps the entire app to provide consistent theming (e.g., light/dark mode).
-     */
     <ThemeProvider>
-      <div className="app-container">
-        {/* Display an animated GIF based on the selected character */}
-        <CharacterGif character={selectedCharacter} />
-
-        {/* Main timer component: handles timer logic and allows interaction */}
-        <TimerContainer 
-          addAchievement={addAchievement} // Passes function to add achievements
-          setCompletionMessage={setCompletionMessage} // Allows TimerContainer to update completion message
-          setProgress={setProgress} // Allows TimerContainer to update progress percentage
-        />
-
-        {/* Progress bar that visually represents how much time has passed */}
-        <ProgressIndicator progress={progress} />
-
-        {/* Show a completion message when a timer session is finished */}
-        {showCompletionMessage && (
-          <CompletionMessage
-            minutes={completionMessage} // Number of minutes completed in the session
-            achievements={achievements} // List of achievements earned so far
-            onClose={toggleCompletionMessage} // Function to close the completion message
+      <DataProvider>
+        <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+          <Header 
+            onSettingsClick={toggleSettings} 
+            onDataClick={toggleDataManager}
           />
-        )}
-      </div>
+          
+          <main className="flex-1 px-4 py-8 flex flex-col items-center justify-center">
+            {showSettings ? (
+              <SettingsPanel onClose={toggleSettings} />
+            ) : showDataManager ? (
+              <DataManager onClose={toggleDataManager} />
+            ) : (
+              <TimerContainer />
+            )}
+          </main>
+          
+          <Footer />
+        </div>
+      </DataProvider>
     </ThemeProvider>
   );
-};
+}
 
 export default App;
